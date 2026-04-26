@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UFC-8">
-<meta name="viewport" content=width=device-width, initial-scale=1.0">
-<title>Hercu OTG</title
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hercu OTG</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -34,7 +34,6 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:sans-serif;}
   margin-bottom:10px;
   box-shadow:0 4px 10px rgba(0,0,0,0.1);
 }
-  
 .card button{position:relative;z-index:2;}
 
 input,select,button{
@@ -44,6 +43,7 @@ button{background:var(--primary);color:#fff;border:none;cursor:pointer;}
 
 .option{background:#eef;padding:10px;margin-top:5px;border-radius:8px;}
 
+/* OVERLAY */
 #overlay{
   display:none;
   position:fixed;
@@ -55,11 +55,14 @@ button{background:var(--primary);color:#fff;border:none;cursor:pointer;}
   justify-content:center;
 }
 
+/* POPUP */
 .popup{
   width:90%;
   max-width:400px;
   display:none;
+}
 
+/* TOAST */
 #toast{
   position:fixed;
   bottom:30px;
@@ -75,7 +78,7 @@ button{background:var(--primary);color:#fff;border:none;cursor:pointer;}
 }
 #toast.show{opacity:1;bottom:50px;}
 </style>
-</head>        
+</head>
 
 <body>
 
@@ -93,20 +96,20 @@ HERCU OTG
     <input id="guruNama" placeholder="Nama">
     <input id="guruPass" type="password" placeholder="Password">
     <button onclick="loginGuru()">Masuk</button>
-  </div
+  </div>
 
   <div id="popupConfirm" class="card popup" onclick="event.stopPropagation()">
     <h3 id="confirmText">Yakin?</h3>
     <button onclick="yesConfirm()">Ya</button>
     <button onclick="tutupPopup()">Batal</button>
-  </diV>
+  </div>
 
-</div> 
+</div>
 
 <div class="container">
 
 <div id="loginBox" class="card">
-<input id="namaInput" placeholder="Nama">  
+<input id="namaInput" placeholder="Nama">
 
 <select id="kelasSelect">
 <option>10A</option><option>10B</option><option>10C</option>
@@ -124,6 +127,9 @@ HERCU OTG
 <div id="contentBox"></div>
 
 </div>
+
+<div id="toast"></div>
+
 <script>
 const firebaseConfig={
   apiKey:"AIzaSy...",
@@ -135,12 +141,14 @@ const db=firebase.database();
 let user="",kelas="",role="",currentMapel="",soalRandom=[],sudahKirim=false;
 let confirmAction=null;
 
+/* TOAST */
 function showToast(msg){
   toast.innerText=msg;
   toast.classList.add("show");
   setTimeout(()=>toast.classList.remove("show"),2000);
 }
 
+/* POPUP */
 function bukaPopup(id){
   overlay.style.display="flex";
   document.querySelectorAll(".popup").forEach(p=>p.style.display="none");
@@ -148,6 +156,7 @@ function bukaPopup(id){
 }
 function tutupPopup(){overlay.style.display="none";}
 
+/* CONFIRM */
 function showConfirm(text,action){
   confirmText.innerText=text;
   confirmAction=action;
@@ -161,6 +170,7 @@ function yesConfirm(){
 /* DARK MODE */
 function toggleMode(){document.body.classList.toggle("dark");}
 
+/* LOGIN */
 function login(){
   user=namaInput.value.trim();
   kelas=kelasSelect.value;
@@ -170,10 +180,11 @@ function login(){
   loadMapel();
 }
 
+/* GURU */
 function bukaGuru(){bukaPopup("popupGuru");}
 
 function loginGuru(){
-  if(guruPass.value!=="gatam")return showToast("Password salah");
+  if(guruPass.value!=="ADMIN123")return showToast("Password salah");
   user=guruNama.value;
   role="guru";
   loginBox.style.display="none";
@@ -188,6 +199,15 @@ function loginGuru(){
   </div>`;
 }
 
+/* MAPEL */
+function buatMapel(){
+  contentBox.innerHTML=`
+  <div class="card">
+  <input id="mapelInput" placeholder="Nama Mapel">
+  <button onclick="simpanMapel()">Simpan</button>
+  </div>`;
+}
+
 function simpanMapel(){
   let nama=mapelInput.value.trim();
   if(!nama)return showToast("Isi nama!");
@@ -196,7 +216,7 @@ function simpanMapel(){
     kelolaMapel();
   });
 }
-  
+
 function kelolaMapel(){
   db.ref("ulangan/mapel").once("value",snap=>{
     let data=snap.val(),html="";
@@ -228,6 +248,7 @@ function hapusMapel(id,nama){
   });
 }
 
+/* SOAL */
 function halamanSoal(id){
   currentMapel=id;
   db.ref("ulangan/mapel/"+id+"/soal").once("value",snap=>{
@@ -241,7 +262,6 @@ function halamanSoal(id){
     let c=document.getElementById("soalContainer");
     if(!data){c.innerHTML="<div class='card'>Belum ada soal</div>";return;}
 
-    
     for(let key in data){
       let d=data[key];
       let div=document.createElement("div");
@@ -287,7 +307,6 @@ function ubahTipe(el){
   p.querySelector(".isianBox").style.display=(el.value=="isian")?"block":"none";
 }
 
-
 function tambahSoal(){
   let c=soalContainer;
   let div=document.createElement("div");
@@ -328,6 +347,7 @@ function simpanSoal(){
   });
 }
 
+/* MURID */
 function loadMapel(){
   db.ref("ulangan/mapel").once("value",snap=>{
     let data=snap.val(),html="";
@@ -347,6 +367,7 @@ function shuffle(a){
     [a[i],a[j]]=[a[j],a[i]];
   }
 }
+
 function mulaiSoal(id,nama){
   sudahKirim=false;
 
@@ -397,12 +418,13 @@ function kirim(mapel,total){
     }
   });
 
-   let nilai=Math.round((benar/total)*100);
+  let nilai=Math.round((benar/total)*100);
 
   db.ref("ulangan/hasil/"+mapel).push({nama:user,kelas:kelas,nilai:nilai});
   contentBox.innerHTML=`<div class="card"><h2>Nilai: ${nilai}</h2></div>`;
 }
 
+/* HASIL */
 function lihatHasil(){
   db.ref("ulangan/hasil").once("value",snap=>{
     let data=snap.val();
@@ -418,7 +440,11 @@ function lihatHasil(){
       }
     }
 
-  function lihatDetailMapel(mapel){
+    contentBox.innerHTML=html;
+  });
+}
+
+function lihatDetailMapel(mapel){
   db.ref("ulangan/hasil/"+mapel).once("value",snap=>{
     let data=snap.val();
     let html=`
@@ -448,10 +474,9 @@ function hapusSemuaHasil(){
   showConfirm("Hapus semua hasil?",()=>{
     db.ref("ulangan/hasil").remove().then(()=>lihatHasil());
   });
-
 }
 
-
+/* ANTI CHEAT */
 function autoSubmit(){
   if(!sudahKirim && soalRandom.length>0){
     sudahKirim=true;
