@@ -75,6 +75,396 @@ button{background:var(--primary);color:#fff;border:none;cursor:pointer;}
 }
 #toast.show{opacity:1;bottom:50px;}
 </style>
-</head>                                                                                                                       
+</head>        
+
+<body>
+
+<div class="header">
+HERCU OTG
+<span class="mode" onclick="toggleMode()">🌙</span>
+<span class="lock" onclick="bukaGuru()">🔒</span>
+</div>
+
+<!-- OVERLAY -->
+<div id="overlay" onclick="tutupPopup()">
+
+  <div id="popupGuru" class="card popup" onclick="event.stopPropagation()">
+    <h3>Login Guru</h3>
+    <input id="guruNama" placeholder="Nama">
+    <input id="guruPass" type="password" placeholder="Password">
+    <button onclick="loginGuru()">Masuk</button>
+  </div
+
+  <div id="popupConfirm" class="card popup" onclick="event.stopPropagation()">
+    <h3 id="confirmText">Yakin?</h3>
+    <button onclick="yesConfirm()">Ya</button>
+    <button onclick="tutupPopup()">Batal</button>
+  </diV>
+
+</div> 
+
+<div class="container">
+
+<div id="loginBox" class="card">
+<input id="namaInput" placeholder="Nama">  
+
+<select id="kelasSelect">
+<option>10A</option><option>10B</option><option>10C</option>
+<option>10D</option><option>10E</option><option>10F</option><option>10G</option>
+<option>11A</option><option>11B</option><option>11C</option>
+<option>11D</option><option>11E</option><option>11F</option><option>11G</option>
+<option>12A</option><option>12B</option><option>12C</option>
+<option>12D</option><option>12E</option><option>12F</option><option>12G</option>
+</select>
+
+<button onclick="login()">Masuk</button>
+</div>
+
+<div id="menuBox"></div>
+<div id="contentBox"></div>
+
+</div>
+<script>
+const firebaseConfig={
+  apiKey:"AIzaSy...",
+  databaseURL:"https://projectchat01-d16bc-default-rtdb.firebaseio.com"
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+
+let user="",kelas="",role="",currentMapel="",soalRandom=[],sudahKirim=false;
+let confirmAction=null;
+
+function showToast(msg){
+  toast.innerText=msg;
+  toast.classList.add("show");
+  setTimeout(()=>toast.classList.remove("show"),2000);
+}
+
+function bukaPopup(id){
+  overlay.style.display="flex";
+  document.querySelectorAll(".popup").forEach(p=>p.style.display="none");
+  document.getElementById(id).style.display="block";
+}
+function tutupPopup(){overlay.style.display="none";}
+
+function showConfirm(text,action){
+  confirmText.innerText=text;
+  confirmAction=action;
+  bukaPopup("popupConfirm");
+}
+function yesConfirm(){
+  if(confirmAction) confirmAction();
+  tutupPopup();
+}
+
+/* DARK MODE */
+function toggleMode(){document.body.classList.toggle("dark");}
+
+function login(){
+  user=namaInput.value.trim();
+  kelas=kelasSelect.value;
+  role="murid";
+  if(!user)return showToast("Isi nama!");
+  loginBox.style.display="none";
+  loadMapel();
+}
+
+function bukaGuru(){bukaPopup("popupGuru");}
+
+function loginGuru(){
+  if(guruPass.value!=="gatam")return showToast("Password salah");
+  user=guruNama.value;
+  role="guru";
+  loginBox.style.display="none";
+  tutupPopup();
+
+  menuBox.innerHTML=`
+  <div class="card">
+  👨‍🏫 ${user}
+  <button onclick="buatMapel()">➕ Buat Mapel</button>
+  <button onclick="kelolaMapel()">⚙️ Kelola Mapel</button>
+  <button onclick="lihatHasil()">📊 Hasil</button>
+  </div>`;
+}
+
+function simpanMapel(){
+  let nama=mapelInput.value.trim();
+  if(!nama)return showToast("Isi nama!");
+  db.ref("ulangan/mapel").push({nama:nama,lock:false}).then(()=>{
+    showToast("Tersimpan!");
+    kelolaMapel();
+  });
+}
+  
+function kelolaMapel(){
+  db.ref("ulangan/mapel").once("value",snap=>{
+    let data=snap.val(),html="";
+    if(!data) html="<div class='card'>Belum ada mapel</div>";
+    else for(let id in data){
+      let d=data[id];
+      html+=`
+      <div class="card">
+      <b>${d.nama}</b><br>${d.lock?"🔒":"🔓"}
+      <button onclick="event.stopPropagation();halamanSoal('${id}')">Soal</button>
+      <button onclick="event.stopPropagation();toggleLock('${id}',${d.lock})">Lock</button>
+      <button onclick="event.stopPropagation();hapusMapel('${id}','${d.nama}')">Hapus</button>
+      </div>`;
+    }
+    contentBox.innerHTML=html;
+  });
+}
+
+function toggleLock(id,lock){
+  db.ref("ulangan/mapel/"+id+"/lock").set(!lock).then(()=>kelolaMapel());
+}
+
+function hapusMapel(id,nama){
+  showConfirm("Hapus mapel & hasil?",()=>{
+    db.ref("ulangan/mapel/"+id).remove();
+    db.ref("ulangan/hasil/"+nama).remove();
+    showToast("Dihapus");
+    kelolaMapel();
+  });
+}
+
+function halamanSoal(id){
+  currentMapel=id;
+  db.ref("ulangan/mapel/"+id+"/soal").once("value",snap=>{
+    let data=snap.val();
+    let html="<div id='soalContainer'></div>";
+    html+=`<button onclick="tambahSoal()">➕ Tambah</button>
+           <button onclick="simpanSoal()">💾 Simpan</button>
+           <button onclick="kelolaMapel()">⬅️</button>`;
+    contentBox.innerHTML=html;
+
+    let c=document.getElementById("soalContainer");
+    if(!data){c.innerHTML="<div class='card'>Belum ada soal</div>";return;}
+
+    
+    for(let key in data){
+      let d=data[key];
+      let div=document.createElement("div");
+      div.className="card soalCard";
+
+      div.innerHTML=`
+      <select class="tipe" onchange="ubahTipe(this)">
+        <option value="pg" ${d.tipe=="pg"?"selected":""}>PG</option>
+        <option value="isian" ${d.tipe=="isian"?"selected":""}>Isian</option>
+      </select>
+      <input class="soal" value="${d.soal||""}">
+      <div class="pgBox" style="display:${d.tipe=="pg"?"block":"none"}">
+        <input class="a" value="${d.a||""}">
+        <input class="b" value="${d.b||""}">
+        <input class="c" value="${d.c||""}">
+        <input class="d" value="${d.d||""}">
+        <select class="jawaban">
+          <option ${d.benar=="A"?"selected":""}>A</option>
+          <option ${d.benar=="B"?"selected":""}>B</option>
+          <option ${d.benar=="C"?"selected":""}>C</option>
+          <option ${d.benar=="D"?"selected":""}>D</option>
+        </select>
+      </div>
+      <div class="isianBox" style="display:${d.tipe=="isian"?"block":"none"}">
+        <input class="jawabanIsian" value="${d.benar||""}">
+      </div>
+      <button onclick="event.stopPropagation();hapusSoal('${key}')">🗑️</button>`;
+      c.appendChild(div);
+    }
+  });
+}
+
+function hapusSoal(id){
+  showConfirm("Hapus soal ini?",()=>{
+    db.ref("ulangan/mapel/"+currentMapel+"/soal/"+id).remove()
+    .then(()=>halamanSoal(currentMapel));
+  });
+}
+
+function ubahTipe(el){
+  let p=el.parentElement;
+  p.querySelector(".pgBox").style.display=(el.value=="pg")?"block":"none";
+  p.querySelector(".isianBox").style.display=(el.value=="isian")?"block":"none";
+}
 
 
+function tambahSoal(){
+  let c=soalContainer;
+  let div=document.createElement("div");
+  div.className="card soalCard";
+  div.innerHTML=`
+  <select class="tipe" onchange="ubahTipe(this)">
+    <option value="pg">PG</option><option value="isian">Isian</option>
+  </select>
+  <input class="soal">
+  <div class="pgBox">
+    <input class="a"><input class="b"><input class="c"><input class="d">
+    <select class="jawaban"><option>A</option><option>B</option><option>C</option><option>D</option></select>
+  </div>
+  <div class="isianBox" style="display:none;"><input class="jawabanIsian"></div>`;
+  c.appendChild(div);
+}
+
+function simpanSoal(){
+  let cards=document.querySelectorAll(".soalCard");
+  db.ref("ulangan/mapel/"+currentMapel+"/soal").remove().then(()=>{
+    cards.forEach(c=>{
+      let tipe=c.querySelector(".tipe").value;
+      let data={soal:c.querySelector(".soal").value,tipe:tipe};
+
+      if(tipe=="pg"){
+        data.a=c.querySelector(".a").value;
+        data.b=c.querySelector(".b").value;
+        data.c=c.querySelector(".c").value;
+        data.d=c.querySelector(".d").value;
+        data.benar=c.querySelector(".jawaban").value;
+      }else{
+        data.benar=c.querySelector(".jawabanIsian").value.toLowerCase();
+      }
+
+      db.ref("ulangan/mapel/"+currentMapel+"/soal").push(data);
+    });
+    showToast("Tersimpan!");
+  });
+}
+
+function loadMapel(){
+  db.ref("ulangan/mapel").once("value",snap=>{
+    let data=snap.val(),html="";
+    if(!data) html="<div class='card'>Belum ada mapel</div>";
+    else for(let id in data){
+      let d=data[id];
+      html+=`<div class="card">${d.nama}
+      ${!d.lock?`<button onclick="event.stopPropagation();mulaiSoal('${id}','${d.nama}')">Mulai</button>`:"🔒"}</div>`;
+    }
+    contentBox.innerHTML=html;
+  });
+}
+
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){
+    let j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+}
+function mulaiSoal(id,nama){
+  sudahKirim=false;
+
+  db.ref("ulangan/mapel/"+id+"/soal").once("value",snap=>{
+    let data=snap.val();
+    if(!data){contentBox.innerHTML="<div class='card'>Belum ada soal</div>";return;}
+
+    soalRandom=Object.values(data);
+    shuffle(soalRandom);
+
+    let html="<h3>"+nama+"</h3>";
+
+    soalRandom.forEach((d,i)=>{
+      html+=`<div class="card">${i+1}. ${d.soal}`;
+
+      if(d.tipe=="pg"){
+        let opsi=[{k:"A",t:d.a},{k:"B",t:d.b},{k:"C",t:d.c},{k:"D",t:d.d}];
+        shuffle(opsi);
+        opsi.forEach(o=>{
+          html+=`<div class="option"><input type="radio" name="q${i}" value="${o.k}">${o.t}</div>`;
+        });
+      }else{
+        html+=`<input id="q${i}">`;
+      }
+
+      html+="</div>";
+    });
+
+    html+=`<button onclick="kirim('${nama}',${soalRandom.length})">Selesai</button>`;
+    contentBox.innerHTML=html;
+  });
+}
+
+function kirim(mapel,total){
+  if(sudahKirim)return;
+  sudahKirim=true;
+
+  let benar=0;
+
+  soalRandom.forEach((d,i)=>{
+    if(d.tipe=="pg"){
+      let p=document.querySelector(`input[name=q${i}]:checked`);
+      if(p && p.value===d.benar) benar++;
+    }else{
+      let isi=document.getElementById("q"+i).value.toLowerCase().trim();
+      let arr=d.benar.split(",");
+      if(arr.includes(isi)) benar++;
+    }
+  });
+
+   let nilai=Math.round((benar/total)*100);
+
+  db.ref("ulangan/hasil/"+mapel).push({nama:user,kelas:kelas,nilai:nilai});
+  contentBox.innerHTML=`<div class="card"><h2>Nilai: ${nilai}</h2></div>`;
+}
+
+function lihatHasil(){
+  db.ref("ulangan/hasil").once("value",snap=>{
+    let data=snap.val();
+    let html="<button onclick='hapusSemuaHasil()'>🗑️ Hapus Semua</button>";
+
+    if(!data){
+      html+="<div class='card'>Belum ada hasil</div>";
+    }else{
+      for(let mapel in data){
+        let jumlah=Object.keys(data[mapel]).length;
+        html+=`<div class="card" onclick="lihatDetailMapel('${mapel}')">
+        <b>${mapel}</b><br>${jumlah} murid</div>`;
+      }
+    }
+
+  function lihatDetailMapel(mapel){
+  db.ref("ulangan/hasil/"+mapel).once("value",snap=>{
+    let data=snap.val();
+    let html=`
+    <button onclick="lihatHasil()">⬅️</button>
+    <h3>${mapel}</h3>
+    `;
+
+    for(let id in data){
+      let d=data[id];
+      html+=`<div class="card">
+      ${d.nama} (${d.kelas}) - ${d.nilai}
+      <button onclick="event.stopPropagation();hapusHasil('${mapel}','${id}')">🗑️</button>
+      </div>`;
+    }
+
+    contentBox.innerHTML=html;
+  });
+}
+
+function hapusHasil(mapel,id){
+  showConfirm("Hapus hasil ini?",()=>{
+    db.ref("ulangan/hasil/"+mapel+"/"+id).remove().then(()=>lihatDetailMapel(mapel));
+  });
+}
+
+function hapusSemuaHasil(){
+  showConfirm("Hapus semua hasil?",()=>{
+    db.ref("ulangan/hasil").remove().then(()=>lihatHasil());
+  });
+
+}
+
+
+function autoSubmit(){
+  if(!sudahKirim && soalRandom.length>0){
+    sudahKirim=true;
+    db.ref("ulangan/hasil/Auto").push({nama:user,kelas:kelas,nilai:0});
+    contentBox.innerHTML="<div class='card'><h2>Nilai: 0</h2></div>";
+  }
+}
+
+document.addEventListener("visibilitychange",()=>{if(document.hidden)autoSubmit();});
+window.addEventListener("blur",autoSubmit);
+window.addEventListener("pagehide",autoSubmit);
+
+</script>
+
+</body>
+</html>
