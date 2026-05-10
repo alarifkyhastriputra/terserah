@@ -1,493 +1,672 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hercu OTG</title>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<title>Boom What?!</title>
 
 <style>
-:root{
-  --bg:#f4f6fb;
-  --card:#fff;
-  --text:#1e1e2f;
-  --primary:#6c5ce7;
-}
-body.dark{--bg:#121212;--card:#1e1e2f;--text:#fff;}
-body{margin:0;background:var(--bg);color:var(--text);font-family:sans-serif;}
 
-.header{
-  padding:18px;text-align:center;
-  background:var(--primary);color:#fff;font-weight:bold;
-  position:relative;
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial,sans-serif;
 }
-.mode,.lock{position:absolute;top:15px;cursor:pointer;}
-.mode{left:15px;} .lock{right:15px;}
 
-.container{max-width:520px;margin:auto;padding:15px;}
+body{
+  background:linear-gradient(135deg,#facc15,#eab308);
+  min-height:100vh;
+  padding:20px;
+}
+
+.container{
+  max-width:700px;
+  margin:auto;
+}
+
 .card{
-  background:var(--card);
-  padding:16px;
-  border-radius:12px;
+  background:white;
+  border-radius:25px;
+  padding:20px;
+  margin-bottom:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+
+.logo{
+  text-align:center;
+  font-size:42px;
+  font-weight:bold;
+  color:#b45309;
+  margin-bottom:5px;
+}
+
+.subtitle{
+  text-align:center;
+  color:#92400e;
+  margin-bottom:20px;
+}
+
+h2{
+  color:#92400e;
   margin-bottom:10px;
-  box-shadow:0 4px 10px rgba(0,0,0,0.1);
 }
-.card button{position:relative;z-index:2;}
 
-input,select,button{
-  width:100%;padding:12px;margin-top:8px;border-radius:10px;border:1px solid #ddd;
-}
-button{background:var(--primary);color:#fff;border:none;cursor:pointer;}
-
-.option{background:#eef;padding:10px;margin-top:5px;border-radius:8px;}
-
-/* OVERLAY */
-#overlay{
-  display:none;
-  position:fixed;
-  top:0;left:0;
+input{
   width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.5);
-  align-items:center;
-  justify-content:center;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  margin-top:10px;
+  background:#fef9c3;
+  font-size:16px;
 }
 
-/* POPUP */
-.popup{
-  width:90%;
-  max-width:400px;
+button{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  margin-top:10px;
+  background:#facc15;
+  color:#713f12;
+  font-weight:bold;
+  font-size:16px;
+  cursor:pointer;
+}
+
+button:hover{
+  opacity:0.9;
+}
+
+.room{
+  background:#fef3c7;
+  padding:15px;
+  border-radius:15px;
+  margin-top:10px;
+}
+
+.chat{
+  height:320px;
+  overflow-y:auto;
+  background:#fef9c3;
+  border-radius:15px;
+  padding:10px;
+  margin-top:10px;
+}
+
+.msg{
+  padding:10px;
+  border-radius:10px;
+  margin-bottom:10px;
+  max-width:85%;
+  word-wrap:break-word;
+}
+
+.player{
+  background:#facc15;
+  color:#713f12;
+  margin-left:auto;
+}
+
+.answer{
+  background:#f59e0b;
+  color:white;
+}
+
+.system{
+  background:#fde68a;
+  color:#78350f;
+}
+
+.hidden{
   display:none;
 }
 
-/* TOAST */
-#toast{
-  position:fixed;
-  bottom:30px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#333;
-  color:#fff;
-  padding:12px 20px;
-  border-radius:8px;
-  opacity:0;
-  transition:0.3s;
-  z-index:9999;
+.role{
+  text-align:center;
+  font-weight:bold;
+  color:#92400e;
+  margin-bottom:15px;
+  font-size:18px;
 }
-#toast.show{opacity:1;bottom:50px;}
+
 </style>
 </head>
-
 <body>
-
-<div class="header">
-HERCU OTG
-<span class="mode" onclick="toggleMode()">🌙</span>
-<span class="lock" onclick="bukaGuru()">🔒</span>
-</div>
-
-<!-- OVERLAY -->
-<div id="overlay" onclick="tutupPopup()">
-
-  <div id="popupGuru" class="card popup" onclick="event.stopPropagation()">
-    <h3>Login Guru</h3>
-    <input id="guruNama" placeholder="Nama">
-    <input id="guruPass" type="password" placeholder="Password">
-    <button onclick="loginGuru()">Masuk</button>
-  </div>
-
-  <div id="popupConfirm" class="card popup" onclick="event.stopPropagation()">
-    <h3 id="confirmText">Yakin?</h3>
-    <button onclick="yesConfirm()">Ya</button>
-    <button onclick="tutupPopup()">Batal</button>
-  </div>
-
-</div>
 
 <div class="container">
 
-<div id="loginBox" class="card">
-<input id="namaInput" placeholder="Nama">
+<div class="card">
 
-<select id="kelasSelect">
-<option>10A</option><option>10B</option><option>10C</option>
-<option>10D</option><option>10E</option><option>10F</option><option>10G</option>
-<option>11A</option><option>11B</option><option>11C</option>
-<option>11D</option><option>11E</option><option>11F</option><option>11G</option>
-<option>12A</option><option>12B</option><option>12C</option>
-<option>12D</option><option>12E</option><option>12F</option><option>12G</option>
-</select>
-
-<button onclick="login()">Masuk</button>
+<div class="logo">
+💥 Boom What?!
 </div>
 
-<div id="menuBox"></div>
-<div id="contentBox"></div>
+<div class="subtitle">
+Game Tebak Kata Multiplayer Online
+</div>
+
+<h2>Buat Room</h2>
+
+<input 
+type="text"
+id="createName"
+placeholder="Nama pemain">
+
+<input 
+type="text"
+id="createRoom"
+placeholder="Nama room">
+
+<button onclick="createRoom()">
+Buat Room
+</button>
 
 </div>
 
-<div id="toast"></div>
 
-<script>
-const firebaseConfig={
-  apiKey:"AIzaSy...",
-  databaseURL:"https://projectchat01-d16bc-default-rtdb.firebaseio.com"
+
+<div class="card">
+
+<h2>📋 Room List</h2>
+
+<div id="roomList">
+Loading...
+</div>
+
+</div>
+
+
+
+<div class="card hidden" id="gameCard">
+
+<div class="role" id="roleText"></div>
+
+
+
+<div id="secretBox">
+
+<h2>🔐 Kata Rahasia</h2>
+
+<input 
+type="password"
+id="secretInput"
+placeholder="Masukkan kata rahasia">
+
+<button onclick="saveSecret()">
+Simpan Kata
+</button>
+
+</div>
+
+
+
+<h2>💬 Chat Game</h2>
+
+<div class="chat" id="chat"></div>
+
+<input 
+type="text"
+id="messageInput"
+placeholder="Tulis pertanyaan atau tebakan">
+
+<button onclick="sendMessage()">
+Kirim Pesan
+</button>
+
+
+
+<div id="answerButtons">
+
+<button onclick="sendAnswer('Iya ✅')">
+Iya
+</button>
+
+<button onclick="sendAnswer('Tidak ❌')">
+Tidak
+</button>
+
+<button onclick="sendAnswer('Mungkin 🤔')">
+Mungkin
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getDatabase,
+ref,
+set,
+push,
+get,
+onValue,
+onChildAdded
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+
+
+// FIREBASE BARU
+
+const firebaseConfig = {
+
+apiKey: "AIzaSyCZIDtUteM2MiESDJd35gaKPHX_Ht1zL6s",
+
+authDomain: "projectchat01-d16bc.firebaseapp.com",
+
+databaseURL: "https://projectchat01-d16bc-default-rtdb.firebaseio.com",
+
+projectId: "projectchat01-d16bc",
+
+storageBucket: "projectchat01-d16bc.appspot.com",
+
+messagingSenderId: "163313653543",
+
+appId: "1:163313653543:web:2124df8e1581192411bb02",
+
+measurementId: "G-96VFCGYCWL"
+
 };
-firebase.initializeApp(firebaseConfig);
-const db=firebase.database();
 
-let user="",kelas="",role="",currentMapel="",soalRandom=[],sudahKirim=false;
-let confirmAction=null;
 
-/* TOAST */
-function showToast(msg){
-  toast.innerText=msg;
-  toast.classList.add("show");
-  setTimeout(()=>toast.classList.remove("show"),2000);
+
+// INIT
+
+const app = initializeApp(firebaseConfig);
+
+const db = getDatabase(app);
+
+
+
+// GLOBAL
+
+let room = "";
+let name = "";
+let role = "";
+
+
+
+// BUAT ROOM
+
+window.createRoom = async function(){
+
+name =
+document
+.getElementById("createName")
+.value
+.trim();
+
+room =
+document
+.getElementById("createRoom")
+.value
+.trim();
+
+if(name === "" || room === ""){
+
+alert("Lengkapi data");
+
+return;
+
 }
 
-/* POPUP */
-function bukaPopup(id){
-  overlay.style.display="flex";
-  document.querySelectorAll(".popup").forEach(p=>p.style.display="none");
-  document.getElementById(id).style.display="block";
-}
-function tutupPopup(){overlay.style.display="none";}
+role = "giver";
 
-/* CONFIRM */
-function showConfirm(text,action){
-  confirmText.innerText=text;
-  confirmAction=action;
-  bukaPopup("popupConfirm");
-}
-function yesConfirm(){
-  if(confirmAction) confirmAction();
-  tutupPopup();
+await set(
+
+ref(db,"rooms/" + room + "/info"),
+
+{
+room:room,
+owner:name
 }
 
-/* DARK MODE */
-function toggleMode(){document.body.classList.toggle("dark");}
+);
 
-/* LOGIN */
-function login(){
-  user=namaInput.value.trim();
-  kelas=kelasSelect.value;
-  role="murid";
-  if(!user)return showToast("Isi nama!");
-  loginBox.style.display="none";
-  loadMapel();
+window.joinGame();
+
+};
+
+
+
+// ROOM LIST
+
+const roomsRef = ref(db,"rooms");
+
+onValue(roomsRef,(snapshot)=>{
+
+const data = snapshot.val();
+
+const roomList =
+document.getElementById("roomList");
+
+roomList.innerHTML = "";
+
+if(!data){
+
+roomList.innerHTML =
+"Belum ada room";
+
+return;
+
 }
 
-/* GURU */
-function bukaGuru(){bukaPopup("popupGuru");}
+for(let key in data){
 
-function loginGuru(){
-  if(guruPass.value!=="ADMIN123")return showToast("Password salah");
-  user=guruNama.value;
-  role="guru";
-  loginBox.style.display="none";
-  tutupPopup();
+const roomData =
+data[key]?.info;
 
-  menuBox.innerHTML=`
-  <div class="card">
-  👨‍🏫 ${user}
-  <button onclick="buatMapel()">➕ Buat Mapel</button>
-  <button onclick="kelolaMapel()">⚙️ Kelola Mapel</button>
-  <button onclick="lihatHasil()">📊 Hasil</button>
-  </div>`;
+if(!roomData) continue;
+
+const div =
+document.createElement("div");
+
+div.className = "room";
+
+div.innerHTML = `
+
+<b>🎮 ${roomData.room}</b><br>
+Owner: ${roomData.owner}<br>
+
+<button onclick="joinRoom('${roomData.room}')">
+Join Room
+</button>
+
+`;
+
+roomList.appendChild(div);
+
 }
 
-/* MAPEL */
-function buatMapel(){
-  contentBox.innerHTML=`
-  <div class="card">
-  <input id="mapelInput" placeholder="Nama Mapel">
-  <button onclick="simpanMapel()">Simpan</button>
-  </div>`;
+});
+
+
+
+// JOIN ROOM
+
+window.joinRoom = function(roomId){
+
+const player =
+prompt("Masukkan nama pemain");
+
+if(!player) return;
+
+room = roomId;
+
+name = player;
+
+role = "guesser";
+
+window.joinGame();
+
+};
+
+
+
+// MASUK GAME
+
+window.joinGame = function(){
+
+document
+.getElementById("gameCard")
+.classList.remove("hidden");
+
+
+if(role === "giver"){
+
+document
+.getElementById("roleText")
+.innerHTML =
+"👑 Kamu adalah Pemberi Kata";
+
+}else{
+
+document
+.getElementById("roleText")
+.innerHTML =
+"🕵️ Kamu adalah Penebak Kata";
+
+document
+.getElementById("secretBox")
+.style.display = "none";
+
 }
 
-function simpanMapel(){
-  let nama=mapelInput.value.trim();
-  if(!nama)return showToast("Isi nama!");
-  db.ref("ulangan/mapel").push({nama:nama,lock:false}).then(()=>{
-    showToast("Tersimpan!");
-    kelolaMapel();
-  });
+
+if(role !== "giver"){
+
+document
+.getElementById("answerButtons")
+.style.display = "none";
+
 }
 
-function kelolaMapel(){
-  db.ref("ulangan/mapel").once("value",snap=>{
-    let data=snap.val(),html="";
-    if(!data) html="<div class='card'>Belum ada mapel</div>";
-    else for(let id in data){
-      let d=data[id];
-      html+=`
-      <div class="card">
-      <b>${d.nama}</b><br>${d.lock?"🔒":"🔓"}
-      <button onclick="event.stopPropagation();halamanSoal('${id}')">Soal</button>
-      <button onclick="event.stopPropagation();toggleLock('${id}',${d.lock})">Lock</button>
-      <button onclick="event.stopPropagation();hapusMapel('${id}','${d.nama}')">Hapus</button>
-      </div>`;
-    }
-    contentBox.innerHTML=html;
-  });
+
+const chatRef =
+ref(db,"rooms/" + room + "/chat");
+
+
+onChildAdded(chatRef,(snapshot)=>{
+
+const data = snapshot.val();
+
+addMessage(
+data.type,
+data.name,
+data.text
+);
+
+});
+
+
+push(
+
+ref(db,"rooms/" + room + "/chat"),
+
+{
+type:"system",
+name:"SYSTEM",
+text:name + " masuk room 🔥"
 }
 
-function toggleLock(id,lock){
-  db.ref("ulangan/mapel/"+id+"/lock").set(!lock).then(()=>kelolaMapel());
+);
+
+};
+
+
+
+// SIMPAN KATA
+
+window.saveSecret = function(){
+
+const secret =
+document
+.getElementById("secretInput")
+.value
+.trim();
+
+if(secret === ""){
+
+alert("Masukkan kata");
+
+return;
+
 }
 
-function hapusMapel(id,nama){
-  showConfirm("Hapus mapel & hasil?",()=>{
-    db.ref("ulangan/mapel/"+id).remove();
-    db.ref("ulangan/hasil/"+nama).remove();
-    showToast("Dihapus");
-    kelolaMapel();
-  });
+set(
+
+ref(db,"rooms/" + room + "/secret"),
+
+{
+word:secret
 }
 
-/* SOAL */
-function halamanSoal(id){
-  currentMapel=id;
-  db.ref("ulangan/mapel/"+id+"/soal").once("value",snap=>{
-    let data=snap.val();
-    let html="<div id='soalContainer'></div>";
-    html+=`<button onclick="tambahSoal()">➕ Tambah</button>
-           <button onclick="simpanSoal()">💾 Simpan</button>
-           <button onclick="kelolaMapel()">⬅️</button>`;
-    contentBox.innerHTML=html;
+);
 
-    let c=document.getElementById("soalContainer");
-    if(!data){c.innerHTML="<div class='card'>Belum ada soal</div>";return;}
+push(
 
-    for(let key in data){
-      let d=data[key];
-      let div=document.createElement("div");
-      div.className="card soalCard";
+ref(db,"rooms/" + room + "/chat"),
 
-      div.innerHTML=`
-      <select class="tipe" onchange="ubahTipe(this)">
-        <option value="pg" ${d.tipe=="pg"?"selected":""}>PG</option>
-        <option value="isian" ${d.tipe=="isian"?"selected":""}>Isian</option>
-      </select>
-      <input class="soal" value="${d.soal||""}">
-      <div class="pgBox" style="display:${d.tipe=="pg"?"block":"none"}">
-        <input class="a" value="${d.a||""}">
-        <input class="b" value="${d.b||""}">
-        <input class="c" value="${d.c||""}">
-        <input class="d" value="${d.d||""}">
-        <select class="jawaban">
-          <option ${d.benar=="A"?"selected":""}>A</option>
-          <option ${d.benar=="B"?"selected":""}>B</option>
-          <option ${d.benar=="C"?"selected":""}>C</option>
-          <option ${d.benar=="D"?"selected":""}>D</option>
-        </select>
-      </div>
-      <div class="isianBox" style="display:${d.tipe=="isian"?"block":"none"}">
-        <input class="jawabanIsian" value="${d.benar||""}">
-      </div>
-      <button onclick="event.stopPropagation();hapusSoal('${key}')">🗑️</button>`;
-      c.appendChild(div);
-    }
-  });
+{
+type:"system",
+name:"SYSTEM",
+text:"Kata rahasia berhasil dibuat 🔐"
 }
 
-function hapusSoal(id){
-  showConfirm("Hapus soal ini?",()=>{
-    db.ref("ulangan/mapel/"+currentMapel+"/soal/"+id).remove()
-    .then(()=>halamanSoal(currentMapel));
-  });
+);
+
+};
+
+
+
+// KIRIM PESAN
+
+window.sendMessage = async function(){
+
+const input =
+document
+.getElementById("messageInput");
+
+const text =
+input.value.trim();
+
+if(text === "") return;
+
+
+const secretRef =
+ref(db,"rooms/" + room + "/secret");
+
+const snap =
+await get(secretRef);
+
+
+if(snap.exists()){
+
+const secret =
+snap.val().word;
+
+if(
+text.toLowerCase()
+===
+secret.toLowerCase()
+){
+
+push(
+
+ref(db,"rooms/" + room + "/chat"),
+
+{
+type:"system",
+name:"SYSTEM",
+text:
+"🎉 " +
+name +
+" berhasil menebak kata: " +
+secret
 }
 
-function ubahTipe(el){
-  let p=el.parentElement;
-  p.querySelector(".pgBox").style.display=(el.value=="pg")?"block":"none";
-  p.querySelector(".isianBox").style.display=(el.value=="isian")?"block":"none";
+);
+
+input.value = "";
+
+return;
+
 }
 
-function tambahSoal(){
-  let c=soalContainer;
-  let div=document.createElement("div");
-  div.className="card soalCard";
-  div.innerHTML=`
-  <select class="tipe" onchange="ubahTipe(this)">
-    <option value="pg">PG</option><option value="isian">Isian</option>
-  </select>
-  <input class="soal">
-  <div class="pgBox">
-    <input class="a"><input class="b"><input class="c"><input class="d">
-    <select class="jawaban"><option>A</option><option>B</option><option>C</option><option>D</option></select>
-  </div>
-  <div class="isianBox" style="display:none;"><input class="jawabanIsian"></div>`;
-  c.appendChild(div);
 }
 
-function simpanSoal(){
-  let cards=document.querySelectorAll(".soalCard");
-  db.ref("ulangan/mapel/"+currentMapel+"/soal").remove().then(()=>{
-    cards.forEach(c=>{
-      let tipe=c.querySelector(".tipe").value;
-      let data={soal:c.querySelector(".soal").value,tipe:tipe};
 
-      if(tipe=="pg"){
-        data.a=c.querySelector(".a").value;
-        data.b=c.querySelector(".b").value;
-        data.c=c.querySelector(".c").value;
-        data.d=c.querySelector(".d").value;
-        data.benar=c.querySelector(".jawaban").value;
-      }else{
-        data.benar=c.querySelector(".jawabanIsian").value.toLowerCase();
-      }
+push(
 
-      db.ref("ulangan/mapel/"+currentMapel+"/soal").push(data);
-    });
-    showToast("Tersimpan!");
-  });
+ref(db,"rooms/" + room + "/chat"),
+
+{
+type:"player",
+name:name,
+text:text
 }
 
-/* MURID */
-function loadMapel(){
-  db.ref("ulangan/mapel").once("value",snap=>{
-    let data=snap.val(),html="";
-    if(!data) html="<div class='card'>Belum ada mapel</div>";
-    else for(let id in data){
-      let d=data[id];
-      html+=`<div class="card">${d.nama}
-      ${!d.lock?`<button onclick="event.stopPropagation();mulaiSoal('${id}','${d.nama}')">Mulai</button>`:"🔒"}</div>`;
-    }
-    contentBox.innerHTML=html;
-  });
+);
+
+input.value = "";
+
+};
+
+
+
+// JAWABAN
+
+window.sendAnswer = function(answer){
+
+push(
+
+ref(db,"rooms/" + room + "/chat"),
+
+{
+type:"answer",
+name:name,
+text:answer
 }
 
-function shuffle(a){
-  for(let i=a.length-1;i>0;i--){
-    let j=Math.floor(Math.random()*(i+1));
-    [a[i],a[j]]=[a[j],a[i]];
-  }
+);
+
+};
+
+
+
+// TAMPILKAN CHAT
+
+function addMessage(type,name,text){
+
+const chat =
+document.getElementById("chat");
+
+const div =
+document.createElement("div");
+
+div.className =
+"msg " + type;
+
+div.innerHTML =
+"<b>" +
+name +
+"</b><br>" +
+text;
+
+chat.appendChild(div);
+
+chat.scrollTop =
+chat.scrollHeight;
+
 }
 
-function mulaiSoal(id,nama){
-  sudahKirim=false;
 
-  db.ref("ulangan/mapel/"+id+"/soal").once("value",snap=>{
-    let data=snap.val();
-    if(!data){contentBox.innerHTML="<div class='card'>Belum ada soal</div>";return;}
 
-    soalRandom=Object.values(data);
-    shuffle(soalRandom);
+// ENTER KEY
 
-    let html="<h3>"+nama+"</h3>";
+document
+.getElementById("messageInput")
+.addEventListener("keypress",function(e){
 
-    soalRandom.forEach((d,i)=>{
-      html+=`<div class="card">${i+1}. ${d.soal}`;
+if(e.key === "Enter"){
 
-      if(d.tipe=="pg"){
-        let opsi=[{k:"A",t:d.a},{k:"B",t:d.b},{k:"C",t:d.c},{k:"D",t:d.d}];
-        shuffle(opsi);
-        opsi.forEach(o=>{
-          html+=`<div class="option"><input type="radio" name="q${i}" value="${o.k}">${o.t}</div>`;
-        });
-      }else{
-        html+=`<input id="q${i}">`;
-      }
+sendMessage();
 
-      html+="</div>";
-    });
-
-    html+=`<button onclick="kirim('${nama}',${soalRandom.length})">Selesai</button>`;
-    contentBox.innerHTML=html;
-  });
 }
 
-function kirim(mapel,total){
-  if(sudahKirim)return;
-  sudahKirim=true;
-
-  let benar=0;
-
-  soalRandom.forEach((d,i)=>{
-    if(d.tipe=="pg"){
-      let p=document.querySelector(`input[name=q${i}]:checked`);
-      if(p && p.value===d.benar) benar++;
-    }else{
-      let isi=document.getElementById("q"+i).value.toLowerCase().trim();
-      let arr=d.benar.split(",");
-      if(arr.includes(isi)) benar++;
-    }
-  });
-
-  let nilai=Math.round((benar/total)*100);
-
-  db.ref("ulangan/hasil/"+mapel).push({nama:user,kelas:kelas,nilai:nilai});
-  contentBox.innerHTML=`<div class="card"><h2>Nilai: ${nilai}</h2></div>`;
-}
-
-/* HASIL */
-function lihatHasil(){
-  db.ref("ulangan/hasil").once("value",snap=>{
-    let data=snap.val();
-    let html="<button onclick='hapusSemuaHasil()'>🗑️ Hapus Semua</button>";
-
-    if(!data){
-      html+="<div class='card'>Belum ada hasil</div>";
-    }else{
-      for(let mapel in data){
-        let jumlah=Object.keys(data[mapel]).length;
-        html+=`<div class="card" onclick="lihatDetailMapel('${mapel}')">
-        <b>${mapel}</b><br>${jumlah} murid</div>`;
-      }
-    }
-
-    contentBox.innerHTML=html;
-  });
-}
-
-function lihatDetailMapel(mapel){
-  db.ref("ulangan/hasil/"+mapel).once("value",snap=>{
-    let data=snap.val();
-    let html=`
-    <button onclick="lihatHasil()">⬅️</button>
-    <h3>${mapel}</h3>
-    `;
-
-    for(let id in data){
-      let d=data[id];
-      html+=`<div class="card">
-      ${d.nama} (${d.kelas}) - ${d.nilai}
-      <button onclick="event.stopPropagation();hapusHasil('${mapel}','${id}')">🗑️</button>
-      </div>`;
-    }
-
-    contentBox.innerHTML=html;
-  });
-}
-
-function hapusHasil(mapel,id){
-  showConfirm("Hapus hasil ini?",()=>{
-    db.ref("ulangan/hasil/"+mapel+"/"+id).remove().then(()=>lihatDetailMapel(mapel));
-  });
-}
-
-function hapusSemuaHasil(){
-  showConfirm("Hapus semua hasil?",()=>{
-    db.ref("ulangan/hasil").remove().then(()=>lihatHasil());
-  });
-}
-
-/* ANTI CHEAT */
-function autoSubmit(){
-  if(!sudahKirim && soalRandom.length>0){
-    sudahKirim=true;
-    db.ref("ulangan/hasil/Auto").push({nama:user,kelas:kelas,nilai:0});
-    contentBox.innerHTML="<div class='card'><h2>Nilai: 0</h2></div>";
-  }
-}
-
-document.addEventListener("visibilitychange",()=>{if(document.hidden)autoSubmit();});
-window.addEventListener("blur",autoSubmit);
-window.addEventListener("pagehide",autoSubmit);
+});
 
 </script>
 
