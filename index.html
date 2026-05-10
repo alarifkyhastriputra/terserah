@@ -9,127 +9,135 @@
 <style>
 
 *{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:Arial,sans-serif;
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
 }
 
 body{
-  background:linear-gradient(135deg,#facc15,#eab308);
-  min-height:100vh;
-  padding:20px;
+background:linear-gradient(135deg,#facc15,#eab308);
+min-height:100vh;
+padding:20px;
 }
 
 .container{
-  max-width:700px;
-  margin:auto;
+max-width:700px;
+margin:auto;
 }
 
 .card{
-  background:white;
-  border-radius:25px;
-  padding:20px;
-  margin-bottom:20px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.2);
+background:white;
+border-radius:25px;
+padding:20px;
+margin-bottom:20px;
+box-shadow:0 10px 30px rgba(0,0,0,0.2);
 }
 
 .logo{
-  text-align:center;
-  font-size:42px;
-  font-weight:bold;
-  color:#b45309;
-  margin-bottom:5px;
+text-align:center;
+font-size:42px;
+font-weight:bold;
+color:#b45309;
+margin-bottom:5px;
 }
 
 .subtitle{
-  text-align:center;
-  color:#92400e;
-  margin-bottom:20px;
+text-align:center;
+color:#92400e;
+margin-bottom:20px;
 }
 
 h2{
-  color:#92400e;
-  margin-bottom:10px;
+color:#92400e;
+margin-bottom:10px;
 }
 
 input{
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  margin-top:10px;
-  background:#fef9c3;
-  font-size:16px;
+width:100%;
+padding:12px;
+border:none;
+border-radius:10px;
+margin-top:10px;
+background:#fef9c3;
+font-size:16px;
 }
 
 button{
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  margin-top:10px;
-  background:#facc15;
-  color:#713f12;
-  font-weight:bold;
-  font-size:16px;
-  cursor:pointer;
+width:100%;
+padding:12px;
+border:none;
+border-radius:10px;
+margin-top:10px;
+background:#facc15;
+color:#713f12;
+font-weight:bold;
+font-size:16px;
+cursor:pointer;
 }
 
 button:hover{
-  opacity:0.9;
+opacity:0.9;
 }
 
 .room{
-  background:#fef3c7;
-  padding:15px;
-  border-radius:15px;
-  margin-top:10px;
+background:#fef3c7;
+padding:15px;
+border-radius:15px;
+margin-top:10px;
 }
 
 .chat{
-  height:320px;
-  overflow-y:auto;
-  background:#fef9c3;
-  border-radius:15px;
-  padding:10px;
-  margin-top:10px;
+height:320px;
+overflow-y:auto;
+background:#fef9c3;
+border-radius:15px;
+padding:10px;
+margin-top:10px;
 }
 
 .msg{
-  padding:10px;
-  border-radius:10px;
-  margin-bottom:10px;
-  max-width:85%;
-  word-wrap:break-word;
+padding:10px;
+border-radius:10px;
+margin-bottom:10px;
+max-width:85%;
+word-wrap:break-word;
 }
 
 .player{
-  background:#facc15;
-  color:#713f12;
-  margin-left:auto;
+background:#facc15;
+color:#713f12;
+margin-left:auto;
 }
 
 .answer{
-  background:#f59e0b;
-  color:white;
+background:#f59e0b;
+color:white;
 }
 
 .system{
-  background:#fde68a;
-  color:#78350f;
+background:#fde68a;
+color:#78350f;
 }
 
 .hidden{
-  display:none;
+display:none;
 }
 
 .role{
-  text-align:center;
-  font-weight:bold;
-  color:#92400e;
-  margin-bottom:15px;
-  font-size:18px;
+text-align:center;
+font-weight:bold;
+color:#92400e;
+margin-bottom:15px;
+font-size:18px;
+}
+
+#timer{
+font-size:28px;
+font-weight:bold;
+text-align:center;
+color:#b45309;
+margin-bottom:15px;
 }
 
 </style>
@@ -182,6 +190,10 @@ Loading...
 
 <div class="card hidden" id="gameCard">
 
+<div id="timer">
+05:00
+</div>
+
 <div class="role" id="roleText"></div>
 
 
@@ -213,7 +225,7 @@ id="messageInput"
 placeholder="Tulis pertanyaan atau tebakan">
 
 <button onclick="sendMessage()">
-Kirim Pesan
+Kirim Pertanyaan
 </button>
 
 
@@ -258,8 +270,6 @@ from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 
 
-// FIREBASE BARU
-
 const firebaseConfig = {
 
 apiKey: "AIzaSyCZIDtUteM2MiESDJd35gaKPHX_Ht1zL6s",
@@ -282,8 +292,6 @@ measurementId: "G-96VFCGYCWL"
 
 
 
-// INIT
-
 const app = initializeApp(firebaseConfig);
 
 const db = getDatabase(app);
@@ -295,6 +303,11 @@ const db = getDatabase(app);
 let room = "";
 let name = "";
 let role = "";
+
+let gameTime = 300;
+let gameTimer;
+
+let playerId = Date.now();
 
 
 
@@ -325,14 +338,11 @@ return;
 role = "giver";
 
 await set(
-
 ref(db,"rooms/" + room + "/info"),
-
 {
 room:room,
 owner:name
 }
-
 );
 
 window.joinGame();
@@ -423,6 +433,15 @@ document
 .getElementById("gameCard")
 .classList.remove("hidden");
 
+set(
+ref(db,"rooms/" + room + "/players/" + playerId),
+{
+name:name,
+role:role
+}
+);
+
+startTimer();
 
 if(role === "giver"){
 
@@ -444,7 +463,6 @@ document
 
 }
 
-
 if(role !== "giver"){
 
 document
@@ -453,10 +471,8 @@ document
 
 }
 
-
 const chatRef =
 ref(db,"rooms/" + room + "/chat");
-
 
 onChildAdded(chatRef,(snapshot)=>{
 
@@ -470,20 +486,72 @@ data.text
 
 });
 
-
 push(
-
 ref(db,"rooms/" + room + "/chat"),
-
 {
 type:"system",
 name:"SYSTEM",
 text:name + " masuk room 🔥"
 }
-
 );
 
 };
+
+
+
+// TIMER
+
+function startTimer(){
+
+clearInterval(gameTimer);
+
+let time = gameTime;
+
+updateTimer(time);
+
+gameTimer = setInterval(()=>{
+
+time--;
+
+updateTimer(time);
+
+if(time <= 0){
+
+clearInterval(gameTimer);
+
+push(
+ref(db,"rooms/" + room + "/chat"),
+{
+type:"system",
+name:"SYSTEM",
+text:"⏰ Waktu habis! Game selesai"
+}
+);
+
+}
+
+},1000);
+
+}
+
+
+
+function updateTimer(time){
+
+const minute =
+String(Math.floor(time / 60))
+.padStart(2,"0");
+
+const second =
+String(time % 60)
+.padStart(2,"0");
+
+document
+.getElementById("timer")
+.innerHTML =
+minute + ":" + second;
+
+}
 
 
 
@@ -506,51 +574,50 @@ return;
 }
 
 set(
-
 ref(db,"rooms/" + room + "/secret"),
-
 {
 word:secret
 }
-
 );
 
 push(
-
 ref(db,"rooms/" + room + "/chat"),
-
 {
 type:"system",
 name:"SYSTEM",
 text:"Kata rahasia berhasil dibuat 🔐"
 }
-
 );
 
 };
 
 
 
-// KIRIM PESAN
+// KIRIM PERTANYAAN
 
 window.sendMessage = async function(){
 
+if(role !== "guesser"){
+
+alert("Hanya penebak yang bisa bertanya");
+
+return;
+
+}
+
 const input =
-document
-.getElementById("messageInput");
+document.getElementById("messageInput");
 
 const text =
 input.value.trim();
 
 if(text === "") return;
 
-
 const secretRef =
 ref(db,"rooms/" + room + "/secret");
 
 const snap =
 await get(secretRef);
-
 
 if(snap.exists()){
 
@@ -564,9 +631,7 @@ secret.toLowerCase()
 ){
 
 push(
-
 ref(db,"rooms/" + room + "/chat"),
-
 {
 type:"system",
 name:"SYSTEM",
@@ -576,8 +641,9 @@ name +
 " berhasil menebak kata: " +
 secret
 }
-
 );
+
+clearInterval(gameTimer);
 
 input.value = "";
 
@@ -587,17 +653,13 @@ return;
 
 }
 
-
 push(
-
 ref(db,"rooms/" + room + "/chat"),
-
 {
 type:"player",
 name:name,
 text:text
 }
-
 );
 
 input.value = "";
@@ -610,16 +672,15 @@ input.value = "";
 
 window.sendAnswer = function(answer){
 
+if(role !== "giver") return;
+
 push(
-
 ref(db,"rooms/" + room + "/chat"),
-
 {
 type:"answer",
 name:name,
 text:answer
 }
-
 );
 
 };
@@ -654,7 +715,34 @@ chat.scrollHeight;
 
 
 
-// ENTER KEY
+// AUTO HAPUS ROOM
+
+window.addEventListener("beforeunload", async function(){
+
+await set(
+ref(db,"rooms/" + room + "/players/" + playerId),
+null
+);
+
+const playersRef =
+ref(db,"rooms/" + room + "/players");
+
+const snap = await get(playersRef);
+
+if(!snap.exists()){
+
+await set(
+ref(db,"rooms/" + room),
+null
+);
+
+}
+
+});
+
+
+
+// ENTER
 
 document
 .getElementById("messageInput")
